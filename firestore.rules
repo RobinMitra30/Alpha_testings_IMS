@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('ADMIN');
+    }
+
+    function isManager() {
+      return hasRole('MANAGER') || isAdmin();
+    }
+
+    function isQC() {
+      return hasRole('QC') || isManager();
+    }
+
+    function isStore() {
+      return hasRole('STORE') || isManager();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidItems(items) {
+      return items is list && items.size() > 0 && items.size() <= 100;
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin())
+        && incoming().uid == request.auth.uid
+        && incoming().role in ['STORE', 'QC', 'ACCOUNTS', 'MANAGER', 'ADMIN'];
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) 
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin() || request.auth.token.email == 'structuremakers.india@gmail.com');
+    }
+
+    // --- PRODUCTS ---
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow create, update: if isManager() && isValidProduct(incoming());
+      allow delete: if isAdmin();
+
+      function isValidProduct(p) {
+        return p.sku is string && p.sku.size() <= 50 &&
+               p.name is string && p.name.size() <= 200 &&
+               p.category is string &&
+               p.uom is string && p.uom.size() <= 20 &&
+               p.lowStockThreshold is number &&
+               p.unitPrice is number &&
+               (p.get('description', '') is string);
+      }
+    }
+
+    // --- PROJECTS ---
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // --- VENDORS ---
+    match /vendors/{vendorId} {
+      allow read: if isSignedIn();
+      allow create, update: if isManager();
+    }
+
+    // --- PURCHASE REQUISITIONS ---
+    match /purchaseRequisitions/{prId} {
+      allow read: if isSignedIn();
+      allow create: if isStore() && incoming().status == 'PENDING' 
+        && incoming().requesterId == request.auth.uid
+        && isValidItems(incoming().items);
+      allow update: if (isManager() && incoming().status in ['APPROVED', 'REJECTED']) 
+        || (isStore() && existing().requesterId == request.auth.uid && existing().status == 'PENDING' && incoming().status == 'PENDING');
+    }
+
+    // --- PURCHASE ORDERS ---
+    match /purchaseOrders/{poId} {
+      allow read: if isSignedIn();
+      allow create, update: if isManager() && isValidItems(incoming().items);
+    }
+
+    // --- GRNs ---
+    match /grns/{grnId} {
+      allow read: if isSignedIn();
+      allow create: if isStore() && incoming().status == 'DRAFT' && isValidItems(incoming().items);
+      allow update: if (isManager() && incoming().status in ['APPROVED', 'REJECTED']) 
+        || (isQC() && existing().status == 'PENDING_APPROVAL')
+        || (isStore() && existing().status == 'DRAFT');
+    }
+
+    // --- STOCKS ---
+    match /stocks/{stockId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin(); // Strictly admin or system batch
+    }
+
+    // --- STOCK MOVEMENTS ---
+    match /stockMovements/{movementId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); 
+    }
+  }
+}

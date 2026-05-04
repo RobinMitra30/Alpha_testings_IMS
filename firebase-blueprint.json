@@ -1,0 +1,222 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System users with roles and project assignments.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "MANAGER", "STORE", "QC", "ACCOUNTS"] },
+        "assignedProjects": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Construction projects where materials are consumed.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "ON_HOLD", "COMPLETED"] },
+        "budget": { "type": "number" },
+        "managerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Suppliers of materials.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "rating": { "type": "number" },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
+      },
+      "required": ["name", "email"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Material definitions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "uom": { "type": "string" },
+        "lowStockThreshold": { "type": "number" },
+        "description": { "type": "string" },
+        "unitPrice": { "type": "number" }
+      },
+      "required": ["sku", "name", "uom"]
+    },
+    "PurchaseRequisition": {
+      "title": "Purchase Requisition",
+      "description": "Requests for materials from departments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "items": { "type": "array", "items": { "$ref": "#/entities/LineItem" } },
+        "totalEstimatedCost": { "type": "number" },
+        "approverId": { "type": "string" },
+        "remarks": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "requesterId", "status", "items"]
+    },
+    "PurchaseOrder": {
+      "title": "Purchase Order",
+      "description": "Official order sent to vendors.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "prId": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "PARTIAL", "COMPLETED", "CANCELLED"] },
+        "items": { "type": "array", "items": { "$ref": "#/entities/POLineItem" } },
+        "taxPercent": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["vendorId", "projectId", "status", "items"]
+    },
+    "GRN": {
+      "title": "Goods Receipt Note",
+      "description": "Records of received materials.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "grnNumber": { "type": "string" },
+        "poId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "challanNumber": { "type": "string" },
+        "challanUrl": { "type": "string" },
+        "items": { "type": "array", "items": { "$ref": "#/entities/GRNLineItem" } },
+        "qcStatus": { "type": "string", "enum": ["PENDING", "PASSED", "FAILED", "PARTIAL"] },
+        "qcRemarks": { "type": "string" },
+        "status": { "type": "string", "enum": ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED"] },
+        "receivedBy": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "siteLocation": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["grnNumber", "poId", "projectId", "items", "status"]
+    },
+    "Stock": {
+      "title": "Stock",
+      "description": "Real-time stock level for a product at a location.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "warehouseId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "quantity"]
+    },
+    "StockMovement": {
+      "title": "Stock Movement",
+      "description": "History of stock changes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "type": { "type": "string", "enum": ["IN", "OUT", "TRANSFER", "ADJUSTMENT", "RETURN_TO_VENDOR", "RETURN_TO_STORE"] },
+        "quantity": { "type": "number" },
+        "referenceId": { "type": "string" },
+        "referenceType": { "type": "string", "enum": ["GRN", "CONSUMPTION", "TRANSFER", "ADJUSTMENT"] },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "type", "quantity", "createdAt"]
+    },
+    "LineItem": {
+      "title": "Line Item",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "estimatedUnitPrice": { "type": "number" }
+      }
+    },
+    "POLineItem": {
+      "title": "PO Line Item",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "quantityOrdered": { "type": "number" },
+        "quantityReceived": { "type": "number" },
+        "unitPrice": { "type": "number" }
+      }
+    },
+    "GRNLineItem": {
+      "title": "GRN Line Item",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "orderedQuantity": { "type": "number" },
+        "receivedQuantity": { "type": "number" },
+        "rejectedQuantity": { "type": "number" },
+        "qcStatus": { "type": "string", "enum": ["PASSED", "FAILED"] }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Project data."
+    },
+    "/vendors/{vendorId}": {
+      "schema": "Vendor",
+      "description": "Vendor directory."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product catalog."
+    },
+    "/purchaseRequisitions/{prId}": {
+      "schema": "PurchaseRequisition",
+      "description": "Purchase requisitions."
+    },
+    "/purchaseOrders/{poId}": {
+      "schema": "PurchaseOrder",
+      "description": "Purchase orders."
+    },
+    "/grns/{grnId}": {
+      "schema": "GRN",
+      "description": "Goods receipt notes."
+    },
+    "/stocks/{stockId}": {
+      "schema": "Stock",
+      "description": "Real-time stock levels."
+    },
+    "/stockMovements/{movementId}": {
+      "schema": "StockMovement",
+      "description": "Audit trail for stock."
+    }
+  }
+}
