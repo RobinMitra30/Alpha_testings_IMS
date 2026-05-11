@@ -12,7 +12,10 @@ import {
   Settings, 
   ShoppingCart, 
   Truck, 
-  Users 
+  Users,
+  CheckSquare,
+  CalendarDays,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
@@ -21,13 +24,16 @@ import { UserRole } from '@/types';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE, UserRole.QC, UserRole.ACCOUNTS] },
-  { name: 'Products', href: '/products', icon: Package, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE] },
+  { name: 'Attendance', href: '/attendance', icon: Users, roles: [UserRole.ADMIN, UserRole.MANAGER] },
+  { name: 'Progress (DPR)', href: '/progress', icon: FileSpreadsheet, roles: [UserRole.ADMIN, UserRole.MANAGER] },
+  { name: 'Site Tasks', href: '/tasks', icon: CheckSquare, roles: [UserRole.ADMIN, UserRole.MANAGER] },
   { name: 'Projects', href: '/projects', icon: Briefcase, roles: [UserRole.ADMIN, UserRole.MANAGER] },
-  { name: 'Vendors', href: '/vendors', icon: Truck, roles: [UserRole.ADMIN, UserRole.MANAGER] },
+  { name: 'Products', href: '/products', icon: Package, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE] },
+  { name: 'Inventory', href: '/inventory', icon: Box, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE] },
   { name: 'Requisitions', href: '/requisitions', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE] },
   { name: 'Orders', href: '/orders', icon: ShoppingCart, roles: [UserRole.ADMIN, UserRole.MANAGER] },
   { name: 'GRNs', href: '/grns', icon: FileCheck, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE, UserRole.QC] },
-  { name: 'Inventory', href: '/inventory', icon: Box, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STORE] },
+  { name: 'Vendors', href: '/vendors', icon: Truck, roles: [UserRole.ADMIN, UserRole.MANAGER] },
   { name: 'Reports', href: '/reports', icon: BarChart3, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.ACCOUNTS] },
   { name: 'Admin', href: '/admin', icon: Settings, roles: [UserRole.ADMIN] },
 ];
@@ -42,12 +48,12 @@ export function Sidebar() {
   );
 
   return (
-    <div className="flex flex-col w-64 bg-slate-900 text-slate-300 border-r border-slate-800 h-screen overflow-y-auto font-sans">
+    <div className="flex flex-col w-64 bg-slate-950 text-slate-400 border-r border-slate-900 h-screen overflow-y-auto font-sans">
       <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-orange-600 rounded-sm flex items-center justify-center text-white font-bold">CP</div>
+        <div className="w-8 h-8 bg-blue-600 rounded-sm flex items-center justify-center text-white font-bold italic">P</div>
         <div>
-          <h1 className="text-white font-semibold tracking-tight">ConstructPro</h1>
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 font-mono">Inventory MS</p>
+          <h1 className="text-white font-bold tracking-tight text-lg">Powerplay</h1>
+          <p className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-mono font-bold leading-none">Construction OS</p>
         </div>
       </div>
 

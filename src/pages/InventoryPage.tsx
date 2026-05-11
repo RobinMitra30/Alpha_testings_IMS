@@ -11,13 +11,35 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Package, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { Search, Package, AlertTriangle, ArrowUpRight, Settings2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { UserRole } from '@/types';
+import { Button } from '@/components/ui/button';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 export default function InventoryPage() {
+  const { profile, user } = useAuth();
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState('');
+
+  // Adjustment State
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [selectedStock, setSelectedStock] = useState<any>(null);
+  const [newQuantity, setNewQuantity] = useState<string>('');
+  const [remarks, setRemarks] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const unsubStock = InventoryService.subscribe(setStocks);
@@ -34,6 +56,36 @@ export default function InventoryPage() {
     s.product?.name.toLowerCase().includes(search.toLowerCase()) || 
     s.project?.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const canAdjust = profile?.role === UserRole.ADMIN || profile?.role === UserRole.MANAGER;
+
+  const handleAdjust = async () => {
+    if (!selectedStock || !user) return;
+    const qty = parseFloat(newQuantity);
+    if (isNaN(qty)) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await InventoryService.adjustStock({
+        productId: selectedStock.productId,
+        projectId: selectedStock.projectId,
+        newQuantity: qty,
+        userId: user.uid,
+        remarks: remarks || 'Manual adjustment'
+      });
+      toast.success('Stock adjusted successfully');
+      setIsAdjusting(false);
+      setSelectedStock(null);
+      setRemarks('');
+    } catch (err) {
+      toast.error('Failed to adjust stock');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -105,6 +157,7 @@ export default function InventoryPage() {
               <TableHead>UOM</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Last Updated</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="text-sm">
@@ -129,12 +182,76 @@ export default function InventoryPage() {
                   <TableCell className="text-right text-xs text-slate-500 font-mono italic">
                     {new Date(stock.lastUpdated).toLocaleString()}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {canAdjust && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1.5"
+                        onClick={() => {
+                          setSelectedStock(stock);
+                          setNewQuantity(stock.quantity.toString());
+                          setIsAdjusting(true);
+                        }}
+                      >
+                        <Settings2 className="w-4 h-4" /> Adjust
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={isAdjusting} onOpenChange={setIsAdjusting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Stock Quantity</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1">
+              <p className="text-xs font-mono text-slate-400 uppercase tracking-tighter">Product</p>
+              <p className="font-semibold">{selectedStock?.product?.name}</p>
+              <p className="text-xs text-slate-500 lowercase font-mono italic">{selectedStock?.project?.name}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity">New Quantity ({selectedStock?.product?.uom})</Label>
+              <Input 
+                id="quantity"
+                type="number" 
+                value={newQuantity}
+                onChange={e => setNewQuantity(e.target.value)}
+                placeholder="Enter new stack count..."
+              />
+              <p className="text-[10px] text-slate-400 font-mono italic">Original count: {selectedStock?.quantity}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="remarks">Adjustment Reason</Label>
+              <Textarea 
+                id="remarks"
+                value={remarks}
+                onChange={e => setRemarks(e.target.value)}
+                placeholder="Why is this stock being adjusted? (e.g. Damage, QC fail, Audit fix)"
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAdjusting(false)}>Cancel</Button>
+            <Button 
+              onClick={handleAdjust} 
+              disabled={isSubmitting}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {isSubmitting ? 'Updating...' : 'Commit Adjustment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

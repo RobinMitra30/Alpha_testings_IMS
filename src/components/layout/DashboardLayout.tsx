@@ -12,8 +12,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-mono text-slate-500 uppercase tracking-widest">Initializing System...</p>
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest">Waking up the site OS...</p>
         </div>
       </div>
     );
@@ -21,20 +21,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-        <div className="max-w-md w-full text-center space-y-8 bg-white p-10 rounded-xl shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+        <div className="max-w-md w-full text-center space-y-12 bg-white p-12 rounded-2xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.07)] border border-slate-100">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg transform rotate-6">CP</div>
+            <div className="w-20 h-20 bg-blue-600 rounded-xl flex items-center justify-center text-white text-5xl font-bold italic shadow-xl">P</div>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">ConstructPro</h1>
-            <p className="text-slate-500">Enterprise Inventory & Project Management</p>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold text-slate-900 tracking-tighter">Powerplay</h1>
+            <p className="text-slate-500 font-medium italic">Your site, in your pocket.</p>
           </div>
-          <Button onClick={login} className="w-full h-12 gap-3 text-lg bg-orange-600 hover:bg-orange-700 transition-all">
-            <LogIn className="w-5 h-5" />
-            Sign in with Google
-          </Button>
-          <p className="text-xs text-slate-400 font-mono">AUTHORIZED PERSONNEL ONLY</p>
+          <div className="space-y-4">
+            <Button onClick={login} className="w-full h-14 gap-3 text-lg bg-blue-600 hover:bg-blue-700 transition-all font-bold rounded-xl shadow-lg shadow-blue-200">
+              <LogIn className="w-5 h-5" />
+              Sign in to Project
+            </Button>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Enterprise Access</p>
+          </div>
         </div>
       </div>
     );

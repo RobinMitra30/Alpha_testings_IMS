@@ -123,6 +123,62 @@ export interface GRN {
   createdAt: string;
 }
 
+export enum MovementType {
+  IN = 'IN',
+  OUT = 'OUT',
+  ADJUSTMENT = 'ADJUSTMENT'
+}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  projectId: string;
+  type: MovementType;
+  quantity: number;
+  referenceId?: string;
+  referenceType?: string;
+  userId: string;
+  remarks?: string;
+  createdAt: string;
+}
+
+export interface Attendance {
+  id: string;
+  projectId: string;
+  date: string;
+  workerName: string;
+  workerType: 'LABOR' | 'SUPERVISOR' | 'CONTRACTOR';
+  status: 'PRESENT' | 'ABSENT' | 'HALF_DAY';
+  shift: 'DAY' | 'NIGHT';
+  remarks?: string;
+  markedBy: string;
+}
+
+export interface DailyReport {
+  id: string;
+  projectId: string;
+  date: string;
+  activities: string;
+  issues: string;
+  weather: string;
+  photoUrls: string[];
+  submittedBy: string;
+  createdAt: string;
+}
+
+export interface SiteTask {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  assignedTo: string;
+  dueDate: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD';
+  createdBy: string;
+  createdAt: string;
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',

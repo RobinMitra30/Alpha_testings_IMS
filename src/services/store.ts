@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError } from '../lib/error-handler';
-import { OperationType, Product, Project, Vendor, Stock, PurchaseRequisition, PurchaseOrder, GRN, GRNLineItem } from '../types';
+import { OperationType, Product, Project, Vendor, Stock, PurchaseRequisition, PurchaseOrder, GRN, GRNLineItem, Attendance, DailyReport, SiteTask } from '../types';
 
 export const ProductService = {
   subscribe: (callback: (products: Product[]) => void) => {
@@ -38,6 +38,64 @@ export const ProductService = {
       await updateDoc(doc(db, 'products', id), product);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    }
+  }
+};
+
+export const AttendanceService = {
+  subscribe: (callback: (attendance: Attendance[]) => void) => {
+    return onSnapshot(collection(db, 'attendance'), (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance)));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'attendance'));
+  },
+  add: async (entry: Omit<Attendance, 'id'>) => {
+    try {
+      await addDoc(collection(db, 'attendance'), entry);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'attendance');
+    }
+  }
+};
+
+export const ProgressService = {
+  subscribe: (callback: (reports: DailyReport[]) => void) => {
+    return onSnapshot(collection(db, 'dailyReports'), (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DailyReport)));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'dailyReports'));
+  },
+  add: async (report: Omit<DailyReport, 'id'>) => {
+    try {
+      await addDoc(collection(db, 'dailyReports'), {
+        ...report,
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'dailyReports');
+    }
+  }
+};
+
+export const TaskService = {
+  subscribe: (callback: (tasks: SiteTask[]) => void) => {
+    return onSnapshot(collection(db, 'siteTasks'), (snapshot) => {
+      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SiteTask)));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'siteTasks'));
+  },
+  add: async (task: Omit<SiteTask, 'id'>) => {
+    try {
+      await addDoc(collection(db, 'siteTasks'), {
+        ...task,
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'siteTasks');
+    }
+  },
+  updateStatus: async (id: string, status: SiteTask['status']) => {
+    try {
+      await updateDoc(doc(db, 'siteTasks', id), { status });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `siteTasks/${id}`);
     }
   }
 };
@@ -200,6 +258,56 @@ export const InventoryService = {
       });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `grns/${grnId}/approve`);
+    }
+  },
+
+  adjustStock: async (params: { 
+    productId: string, 
+    projectId: string, 
+    newQuantity: number, 
+    userId: string, 
+    remarks: string 
+  }) => {
+    try {
+      await runTransaction(db, async (transaction) => {
+        const stockId = `${params.projectId}_${params.productId}`;
+        const stockRef = doc(db, 'stocks', stockId);
+        const stockSnap = await transaction.get(stockRef);
+        
+        const oldQuantity = stockSnap.exists() ? stockSnap.data().quantity : 0;
+        const adjustmentAmount = params.newQuantity - oldQuantity;
+
+        // 1. Update or create stock record
+        if (stockSnap.exists()) {
+          transaction.update(stockRef, {
+            quantity: params.newQuantity,
+            lastUpdated: new Date().toISOString()
+          });
+        } else {
+          transaction.set(stockRef, {
+            id: stockId,
+            productId: params.productId,
+            projectId: params.projectId,
+            quantity: params.newQuantity,
+            lastUpdated: new Date().toISOString()
+          });
+        }
+
+        // 2. Log movement
+        const movementRef = doc(collection(db, 'stockMovements'));
+        transaction.set(movementRef, {
+          id: movementRef.id,
+          productId: params.productId,
+          projectId: params.projectId,
+          type: 'ADJUSTMENT',
+          quantity: adjustmentAmount,
+          userId: params.userId,
+          remarks: params.remarks,
+          createdAt: new Date().toISOString()
+        });
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `stocks/${params.projectId}_${params.productId}/adjust`);
     }
   }
 };

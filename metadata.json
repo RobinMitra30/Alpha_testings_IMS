@@ -1,6 +1,6 @@
 {
-  "name": "ConstructPro Inventory & GRN System",
-  "description": "A production-grade inventory management system specializing in construction and project-based workflows, featuring multi-level PR/PO approvals and a rigorous GRN (Goods Receipt Note) lifecycle.",
+  "name": "Powerplay Construction Management",
+  "description": "Comprehensive construction site management platform for tracking progress, attendance, material inventory, and project financials.",
   "requestFramePermissions": [],
   "majorCapabilities": ["INVENTORY_MANAGEMENT", "PURCHASE_WORKFLOW", "PROJECT_TRACKING", "REAL_TIME_ANALYTICS"]
 }

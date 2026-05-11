@@ -120,13 +120,37 @@ service cloud.firestore {
     // --- STOCKS ---
     match /stocks/{stockId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin(); // Strictly admin or system batch
+      allow write: if isManager();
     }
 
     // --- STOCK MOVEMENTS ---
     match /stockMovements/{movementId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn(); 
+      allow create: if isManager() && isValidMovement(incoming());
+
+      function isValidMovement(m) {
+        return m.productId is string && m.projectId is string &&
+               m.type in ['IN', 'OUT', 'ADJUSTMENT'] &&
+               m.quantity is number &&
+               m.userId == request.auth.uid &&
+               (m.get('remarks', '') is string);
+      }
+    }
+    // --- ATTENDANCE ---
+    match /attendance/{attendanceId} {
+      allow read, create, update: if isManager();
+    }
+
+    // --- DAILY REPORTS ---
+    match /dailyReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create, update: if isManager();
+    }
+
+    // --- SITE TASKS ---
+    match /siteTasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create, update: if isManager();
     }
   }
 }
